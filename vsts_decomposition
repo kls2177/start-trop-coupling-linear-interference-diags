@@ -1,0 +1,115 @@
+#!/bin/csh
+#
+# Meridional Eddy Heat Flux Linear Interference Decomposition
+#
+set echo
+#
+# ========================================================================================
+#
+# ========================== USER SHOULD EDIT THESE VARIABLES ============================
+#
+set root = /scratch/p/pjk/ksmith/POLAR_runs
+set work = $root/tmp/$$
+set ctrl_expt = HSnopolartopographygamma2/hybrid/projects/pp/eddies
+set cool_expt = HSpolartopographygamma2_ens_polar/pp/eddies
+set diff_expt = diff_topographygamma2_ens_polar
+set ctrl_dir = $root/$ctrl_expt
+set cool_dir = $root/$cool_expt
+set diff_dir = $root/$diff_expt
+# =====================================================================================
+# =====================================================================================
+
+mkdir -p $work
+cd $work
+# =====================================================================================
+  ncrename -O -v vcomp,vstar $cool_dir/vstar.all.nc
+  ncrename -O -v temp,Tstar $cool_dir/Tstar.all.nc
+  ncrename -O -v vcomp,vstar $ctrl_dir/vstar.ens.all.nc
+  ncrename -O -v temp,Tstar $ctrl_dir/Tstar.ens.all.nc
+
+  ncdiff -O $cool_dir/vstar.all.nc $ctrl_dir/vstar.ens.all.nc $diff_dir/diff_vstar.all.nc
+  ncdiff -O $cool_dir/Tstar.all.nc $ctrl_dir/Tstar.ens.all.nc $diff_dir/diff_Tstar.all.nc
+ 
+  ncrename -O -v vstar,diff_vstar $diff_dir/diff_vstar.all.nc
+  ncrename -O -v Tstar,diff_Tstar $diff_dir/diff_Tstar.all.nc
+
+  ncwa -O -a record $cool_dir/vstar.all.nc $cool_dir/vstar.ea.nc
+  ncwa -O -a record $cool_dir/Tstar.all.nc $cool_dir/Tstar.ea.nc
+  ncwa -O -a record $ctrl_dir/vstar.ens.all.nc $ctrl_dir/vstar.ens.ea.nc
+  ncwa -O -a record $ctrl_dir/Tstar.ens.all.nc $ctrl_dir/Tstar.ens.ea.nc
+
+  ncdiff -O $cool_dir/vstar.ea.nc $ctrl_dir/vstar.ens.ea.nc $diff_dir/diff_vstar.ea.nc
+  ncdiff -O $cool_dir/Tstar.ea.nc $ctrl_dir/Tstar.ens.ea.nc $diff_dir/diff_Tstar.ea.nc
+
+  ncrename -O -v vstar,diff_vstar $diff_dir/diff_vstar.ea.nc
+  ncrename -O -v Tstar,diff_Tstar $diff_dir/diff_Tstar.ea.nc
+
+  ncdiff -O -v vsts $cool_dir/vstarTstar.zm.all.nc $ctrl_dir/vstarTstar.zm.all.nc $diff_dir/diff_vstarTstar.zm.all.nc
+  ncdiff -O -v vsts $cool_dir/vstarTstar.zm.ea.nc $ctrl_dir/vstarTstar.zm.ea.nc $diff_dir/diff_vstarTstar.zm.ea.nc
+
+  ##### PART 1 #####
+
+  cp $diff_dir/diff_vstarTstar.zm.all.nc $diff_dir/diff_vsts_decomp.all.nc 
+
+  ncdiff -O $ctrl_dir/vstar.ens.all.nc $ctrl_dir/vstar.ens.ea.nc $ctrl_dir/vprime.ens.all.nc
+  ncdiff -O $ctrl_dir/Tstar.ens.all.nc $ctrl_dir/Tstar.ens.ea.nc $ctrl_dir/Tprime.ens.all.nc
+  ncrename -O -v vstar,vprime  $ctrl_dir/vprime.ens.all.nc
+  ncrename -O -v Tstar,Tprime  $ctrl_dir/Tprime.ens.all.nc
+  cp $ctrl_dir/vprime.ens.all.nc $ctrl_dir/vptp.ens.all.nc
+  ncks -Achv Tprime $ctrl_dir/Tprime.ens.all.nc $ctrl_dir/vptp.ens.all.nc
+
+  ncdiff -O $cool_dir/vstar.all.nc $cool_dir/vstar.ea.nc $cool_dir/vprime.all.nc
+  ncdiff -O $cool_dir/Tstar.all.nc $cool_dir/Tstar.ea.nc $cool_dir/Tprime.all.nc
+  ncrename -O -v vstar,vprime  $cool_dir/vprime.all.nc
+  ncrename -O -v Tstar,Tprime  $cool_dir/Tprime.all.nc
+  cp $cool_dir/vprime.all.nc $cool_dir/vptp.all.nc
+  ncks -Achv Tprime $cool_dir/Tprime.all.nc $cool_dir/vptp.all.nc
+
+  ncap -O -vs "vptp = vprime * Tprime" $ctrl_dir/vptp.ens.all.nc tmp1.nc
+  ncks -Achv vptp tmp1.nc $ctrl_dir/vptp.ens.all.nc
+
+  ncap -O -vs "vptp = vprime * Tprime" $cool_dir/vptp.all.nc tmp2.nc
+  ncks -Achv vptp tmp2.nc $cool_dir/vptp.all.nc
+
+  ncdiff -O $cool_dir/vptp.all.nc $ctrl_dir/vptp.ens.all.nc $diff_dir/diff_vptp.all.nc
+  ncks -Achv vptp $diff_dir/diff_vptp.all.nc $diff_dir/diff_vsts_decomp.all.nc
+   
+  ncwa -O -a lon $diff_dir/diff_vsts_decomp.all.nc $diff_dir/diff_vsts_decomp.zm.all.nc
+
+##### PART 2 #####
+
+  cp $diff_dir/diff_vstar.ea.nc $diff_dir/diff_vsts_decomp2.ea.nc
+ 
+  ncks -Achv diff_Tstar $diff_dir/diff_Tstar.ea.nc $diff_dir/diff_vsts_decomp2.ea.nc
+  ncks -Achv vstar $ctrl_dir/vstar.ens.ea.nc $diff_dir/diff_vsts_decomp2.ea.nc
+  ncks -Achv Tstar $ctrl_dir/Tstar.ens.ea.nc $diff_dir/diff_vsts_decomp2.ea.nc
+  
+  cp $ctrl_dir/vstar.ens.ea.nc $ctrl_dir/vsTs_ctrl.ea.nc
+  ncks -Achv Tstar $ctrl_dir/Tstar.ens.ea.nc $ctrl_dir/vsTs_ctrl.ea.nc
+ 
+  cp $cool_dir/vstar.ea.nc $cool_dir/vsTs_cool.ea.nc
+  ncks -Achv Tstar $cool_dir/Tstar.ea.nc $cool_dir/vsTs_cool.ea.nc
+
+  ncap -O -vs "del_vT_extra = vstar * Tstar" $ctrl_dir/vsTs_ctrl.ea.nc tmp1.nc
+  ncks -Achv del_vT_extra tmp1.nc $ctrl_dir/vsTs_ctrl.ea.nc
+
+  ncap -O -vs "del_vT_extra = vstar * Tstar" $cool_dir/vsTs_cool.ea.nc tmp1.nc
+  ncks -Achv del_vT_extra tmp1.nc $cool_dir/vsTs_cool.ea.nc
+
+  ncdiff -O $cool_dir/vsTs_cool.ea.nc $ctrl_dir/vsTs_ctrl.ea.nc tmp1.nc
+  ncks -Achv del_vT_extra tmp1.nc $diff_dir/diff_vsts_decomp2.ea.nc
+
+  ncap -O -vs "vsdelts_extra = vstar * diff_Tstar" $diff_dir/diff_vsts_decomp2.ea.nc tmp1.nc
+  ncks -Achv vsdelts_extra tmp1.nc $diff_dir/diff_vsts_decomp2.ea.nc
+
+  ncap -O -vs "delvsts_extra = diff_vstar * Tstar" $diff_dir/diff_vsts_decomp2.ea.nc tmp1.nc
+  ncks -Achv delvsts_extra tmp1.nc $diff_dir/diff_vsts_decomp2.ea.nc
+
+  ncap -O -vs "delvsdelts_extra = diff_vstar * diff_Tstar" $diff_dir/diff_vsts_decomp2.ea.nc tmp1.nc
+  ncks -Achv delvsdelts_extra tmp1.nc $diff_dir/diff_vsts_decomp2.ea.nc
+
+  ncwa -O -a lon $diff_dir/diff_vsts_decomp2.ea.nc $diff_dir/diff_vsts_decomp2.zm.ea.nc
+
+
+ \rm -rf $work/*.nc 
+
