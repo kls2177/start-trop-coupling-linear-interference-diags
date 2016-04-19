@@ -43,7 +43,8 @@ for j in range(var_ssws.shape[0]):
         i = i + 1
 
 #Second criterion - events must be separated by 20 CONSECUTIVE days of westerly winds
-#function that filters easterly days to extract SSW central dates
+
+#EASTERLY_DATE_FILTER: Function that filters easterly days to extract SSW central dates
 def easterly_date_filter(i,n,sep):
     if (len(time) - (ssw_date[i] + n)) >= 20:
         for j in range(n,20+n-1):
