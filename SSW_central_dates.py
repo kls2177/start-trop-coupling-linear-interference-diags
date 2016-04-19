@@ -31,7 +31,9 @@ time = [x for x in range(var_ssws.shape[1])]
 #####################################################
 #Now, search for SSWs using the two standard criteria
 
-#First criterion (u < 0)
+#########################
+#First criterion (u < 0)#
+#########################
 ssw_date = []
 ssw_year = []
 for j in range(var_ssws.shape[0]):
@@ -42,9 +44,11 @@ for j in range(var_ssws.shape[0]):
             ssw_year.append(j)
         i = i + 1
 
-#Second criterion - events must be separated by 20 CONSECUTIVE days of westerly winds
+######################################################################################
+#Second criterion - events must be separated by 20 CONSECUTIVE days of westerly winds#
+######################################################################################
 
-#EASTERLY_DATE_FILTER: Function that filters easterly days to extract SSW central dates
+#First, define a function that filters easterly days to extract SSW central dates
 def easterly_date_filter(i,n,sep):
     if (len(time) - (ssw_date[i] + n)) >= 20:
         for j in range(n,20+n-1):
@@ -71,7 +75,7 @@ def easterly_date_filter(i,n,sep):
         n = 1
         return [i, n, sep]
 
-#Second criterion - apply function
+#Then, apply function
 i = 0
 n = 1
 sep = 1
@@ -98,9 +102,9 @@ while sswlist[0] < len(ssw_year):
         n = 1
         sep = 1
 
-#combine dates and year into one array for pickling
+#combine dates and years into one array for pickling
 ssw_central_dates = np.vstack((ssw_date_new,ssw_year_new))
 
-#pickle the dates for later use
+#pickle for later use
 with open('ERAI_ssw_central_dates.pickle','wb') as fp:
     pickle.dump(ssw_central_dates,fp)
